@@ -22,12 +22,12 @@
 #define YELLOW          0xFFE0  
 #define WHITE           0xFFFF
 
-Adafruit_HX8340B tft_display(TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
-GFXcanvas16 display(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT);
+Adafruit_HX8340B display(TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
+//GFXcanvas16 display(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT);
 
 float pi = 3.1415926;
 
-/*void lcdTestPattern(void)
+void lcdTestPattern(void)
 {
     uint32_t i,j;
     display.fillScreen(BLACK);
@@ -55,7 +55,7 @@ float pi = 3.1415926;
                 display.rawWrite(BLACK);
         }
     }
-}*/
+}
 
 void testlines(uint16_t color) 
 {
@@ -218,7 +218,7 @@ void setup()
 {
     stdio_init_all();
 
-    tft_display.begin();
+    display.begin();
 }
 
 void loop()
@@ -232,7 +232,7 @@ void loop()
 
      // line draw test
     testlines(YELLOW);
-    tft_display.drawBitmap(display.getBuffer());
+    //tft_display.drawBitmap(display.getBuffer());
     //sleep_ms(500);    
     
     // optimized lines
@@ -251,11 +251,11 @@ void loop()
     //sleep_ms(1000);
 
     testroundrects();
-    tft_display.drawBitmap(display.getBuffer());
+    //tft_display.drawBitmap(display.getBuffer());
     //sleep_ms(500);
     
     testtriangles();
-    tft_display.drawBitmap(display.getBuffer());
+    //tft_display.drawBitmap(display.getBuffer());
     //sleep_ms(500);
 
     //lcdTestPattern();
@@ -278,7 +278,7 @@ void loop()
     display.setTextColor(WHITE);
     drawtext(buf);
 
-    tft_display.drawBitmap(display.getBuffer());
+    //tft_display.drawBitmap(display.getBuffer());
 
     sleep_ms(5000);
 }

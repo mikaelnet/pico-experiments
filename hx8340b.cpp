@@ -8,6 +8,9 @@
 #define LOW   0
 #define HIGH  1
 
+#define _chip_enable()    gpio_put(cs, LOW);
+#define _chip_disable()   gpio_put(cs, HIGH);
+
 Adafruit_HX8340B::Adafruit_HX8340B(int8_t SID, int8_t SCLK, int8_t RST, int8_t CS) : Adafruit_GFX(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT) 
 {
     sid   = SID;
@@ -64,7 +67,7 @@ void Adafruit_HX8340B::begin()
 
     gpio_init(cs);
     gpio_set_dir(cs, GPIO_OUT);
-    gpio_put(cs, LOW);
+    _chip_enable();
 
     gpio_init(sclk);
     gpio_set_dir(sclk, GPIO_OUT);
@@ -78,7 +81,7 @@ void Adafruit_HX8340B::begin()
     reset();
 
     // Initialize command sequence
-    gpio_put(cs, LOW);
+    _chip_enable();
 
     uint8_t numCommands, numArgs;
     uint16_t ms;
@@ -98,7 +101,7 @@ void Adafruit_HX8340B::begin()
             sleep_ms(*addr ++);
     }
 
-    gpio_put(cs, HIGH);
+    _chip_disable();
 }
 
 void Adafruit_HX8340B::reset()
@@ -157,7 +160,7 @@ void Adafruit_HX8340B::writeData16(uint16_t c)
 void Adafruit_HX8340B::setWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
     uint8_t t0, t1;
-    gpio_put(cs, LOW);
+    _chip_enable();
 
     switch(_rotation) {
         case 1:
@@ -196,7 +199,7 @@ void Adafruit_HX8340B::setWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 
     writeCommand(HX8340B_N_RAMWR);
 
-    gpio_put(cs, HIGH);
+    _chip_disable();
 }
 
 void Adafruit_HX8340B::fillScreen(uint16_t c) 
@@ -205,7 +208,7 @@ void Adafruit_HX8340B::fillScreen(uint16_t c)
 
     setWindow(0, 0, _width-1, _height-1);
 
-    gpio_put(cs, LOW);
+    _chip_enable();
 
     for (y = _height; y > 0; y--)
     {
@@ -215,13 +218,13 @@ void Adafruit_HX8340B::fillScreen(uint16_t c)
         }
     }
 
-    gpio_put(cs, HIGH);
+    _chip_disable();
 }
 
 void Adafruit_HX8340B::pushColor(uint16_t color) {
-    gpio_put(cs, LOW);
+    _chip_enable();
     writeData16(color);
-    gpio_put(cs, HIGH);
+    _chip_disable();
 }
 
 // the most basic function, set a single pixel
@@ -256,12 +259,12 @@ void Adafruit_HX8340B::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t c
     setWindow(x, y, x, y + h - 1);
 
     uint8_t hi = color >> 8, lo = color & 0xFF;
-    gpio_put(cs, LOW);
+    _chip_enable();
     while (h--) {
         writeData(hi);
         writeData(lo);
     }
-    gpio_put(cs, HIGH);
+    _chip_disable();
 }
 
 void Adafruit_HX8340B::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) 
@@ -285,12 +288,12 @@ void Adafruit_HX8340B::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t c
     setWindow(x, y, x + w - 1, y);
 
     uint8_t hi = color >> 8, lo = color & 0xFF;
-    gpio_put(cs, LOW);
+    _chip_enable();
     while (w--) {
         writeData(hi);
         writeData(lo);
     }
-    gpio_put(cs, HIGH);
+    _chip_disable();
 }
 
 void Adafruit_HX8340B::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) 
@@ -325,12 +328,12 @@ void Adafruit_HX8340B::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint
     uint8_t hi = color >> 8, lo = color;
     int32_t i  = (int32_t)w * (int32_t)h;
 
-    gpio_put(cs, LOW);
+    _chip_enable();
     while(i--) {
         writeData(hi);
         writeData(lo);
     }
-    gpio_put(cs, HIGH);
+    _chip_disable();
 }
 
 
@@ -345,10 +348,10 @@ void Adafruit_HX8340B::drawBitmap(const uint16_t *buffer)
 
     uint16_t i = WIDTH * HEIGHT;
     const uint16_t *ptr = buffer;
-    gpio_put(cs, LOW);
+    _chip_enable();
     while (i--) {
         writeData16(*ptr ++);
     }
-    gpio_put(cs, HIGH);
+    _chip_disable();
 
 }

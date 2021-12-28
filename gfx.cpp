@@ -528,6 +528,6 @@ size_t Adafruit_GFX::write(uint8_t c)
 
 void Adafruit_GFX::setTextSize(uint8_t s_x, uint8_t s_y) 
 {
-  _textsize_x = (s_x > 0) ? s_x : 1;
-  _textsize_y = (s_y > 0) ? s_y : 1;
+    _textsize_x = (s_x > 0) ? s_x : 1;
+    _textsize_y = (s_y > 0) ? s_y : 1;
 }
