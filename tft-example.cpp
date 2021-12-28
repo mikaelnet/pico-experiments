@@ -1,6 +1,7 @@
 #include "pico/stdlib.h"
 #include "pico/types.h"
 #include "pico/printf.h"
+#include "hardware/adc.h"
 
 #include "gfx.hpp"
 #include "gfxcanvas.hpp"
@@ -218,10 +219,43 @@ void drawtext(const char *text)
 void setup()
 {
     stdio_init_all();
-
     display.begin();
+    display.fillScreen(BLACK);
+
+    adc_init();
+    adc_gpio_init(26);
+    adc_gpio_init(27);
 }
 
+#define CROSS_HAIR_SIZE 4
+uint16_t last_X, last_Y;
+void loop()
+{
+    adc_select_input(0);    // gpio 26, pin 31
+    uint adc_x_raw = adc_read();
+    adc_select_input(1);    // gpio 27, pin 32
+    uint adc_y_raw = adc_read();
+
+    const uint adc_max = (1 << 12) - 1;
+    uint16_t x = adc_x_raw * display.width() / adc_max;
+    uint16_t y = adc_y_raw * display.height() / adc_max;
+
+    display.drawFastVLine(last_X, last_Y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, BLACK);
+    display.drawFastHLine(last_X - CROSS_HAIR_SIZE, last_Y, CROSS_HAIR_SIZE * 2 + 1, BLACK);
+    display.drawFastVLine(x, y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, 0b1111110000010000);
+    display.drawFastHLine(x - CROSS_HAIR_SIZE, y, CROSS_HAIR_SIZE * 2 + 1, 0b1111110000010000);
+    last_X = x;
+    last_Y = y;
+
+    char buf[20];
+    snprintf (buf, sizeof(buf), "X: %4d\nY: %4d", adc_x_raw, adc_y_raw);
+    display.setTextSize(1);
+    display.setCursor(0,0);
+    display.setTextColor(WHITE);
+    drawtext(buf);
+}
+
+#if false
 void loop()
 {
     absolute_time_t start = get_absolute_time();
@@ -283,7 +317,7 @@ void loop()
 
     sleep_ms(5000);
 }
-
+#endif
 
 
 #if false

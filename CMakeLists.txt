@@ -16,7 +16,7 @@ add_executable(remote
         )
 
 # pull in common dependencies
-target_link_libraries(remote pico_stdlib pico_printf pico_malloc pico_mem_ops hardware_spi)
+target_link_libraries(remote pico_stdlib pico_printf pico_malloc pico_mem_ops hardware_spi hardware_adc)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(remote)

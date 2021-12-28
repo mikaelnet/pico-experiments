@@ -88,11 +88,11 @@ void Adafruit_HX8340B::begin()
     gpio_set_dir(sid, GPIO_OUT);
     gpio_put(sid, LOW);
     */
-    spi_init(_spi_port, 64 * 1000 * 1000);   // 1MHz
+    spi_init(_spi_port, 64 * 1000 * 1000);   // 64MHz
     gpio_set_function(_clk_pin, GPIO_FUNC_SPI);
     gpio_set_function(_mosi_pin, GPIO_FUNC_SPI);
     // TODO: Try bi_2pins_with_func and remove MISO pin 4
-    bi_decl(bi_3pins_with_func(4, _mosi_pin, _clk_pin, GPIO_FUNC_SPI));
+    bi_decl(bi_2pins_with_func(_mosi_pin, _clk_pin, GPIO_FUNC_SPI));
     spi_set_format(_spi_port, 9, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     // Perform a reset cycle
@@ -147,10 +147,10 @@ void Adafruit_HX8340B::writeData(uint8_t c)
 
 void Adafruit_HX8340B::writeData16(uint16_t c) 
 {
-    uint8_t hi = c >> 8;
-    uint8_t lo = c & 0xFF;
-    writeData(hi);
-    writeData(lo);
+    uint16_t value[2];
+    value[0] = 0x0100 | c >> 8;
+    value[1] = 0x0100 | (c & 0xFF);
+    spi_write16_blocking(_spi_port, value, 2);
 }
 
 void Adafruit_HX8340B::setWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
@@ -254,11 +254,9 @@ void Adafruit_HX8340B::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t c
   
     setWindow(x, y, x, y + h - 1);
 
-    uint8_t hi = color >> 8, lo = color & 0xFF;
     _chip_enable();
     while (h--) {
-        writeData(hi);
-        writeData(lo);
+        writeData16(color);
     }
     _chip_disable();
 }
@@ -283,11 +281,9 @@ void Adafruit_HX8340B::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t c
     }
     setWindow(x, y, x + w - 1, y);
 
-    uint8_t hi = color >> 8, lo = color & 0xFF;
     _chip_enable();
     while (w--) {
-        writeData(hi);
-        writeData(lo);
+        writeData16(color);
     }
     _chip_disable();
 }
@@ -321,13 +317,11 @@ void Adafruit_HX8340B::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint
     }
 
     setWindow(x, y, x + w - 1, y + h - 1);
-    uint8_t hi = color >> 8, lo = color;
     int32_t i  = (int32_t)w * (int32_t)h;
 
     _chip_enable();
     while(i--) {
-        writeData(hi);
-        writeData(lo);
+        writeData16(color);
     }
     _chip_disable();
 }

@@ -10,7 +10,9 @@ Contains as scaled-down port of the GFX library ported to rp2040.
 - [x] Control the TFT using bit banging
 - [x] Control the TFT using hardware spi port
 - [ ] Investigate if a custom PIO 9-bit spi implementation would be better.
-- [ ] Attach a joystick and visualize its position
+- [x] Attach a joystick and visualize its position
+- [ ] Attach joystick button as command button
+- [ ] Adjust TFT backlight with PWM
 - [ ] Transmit data via a nRF24l01.
 
 # Commands to remember
@@ -18,12 +20,13 @@ Contains as scaled-down port of the GFX library ported to rp2040.
 * from the build folder: `cmake .. && make -j4 && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program remote.elf verify"`
 
 # Hardware pins
-| Pico pin | GPIO | Display PIN | Function  | Port |
-| -------- | ---- | ----------- | --------- | ---- |
-| 4        | 2    | SCK         | SCK       | SPI0 |
-| 5        | 3    | MOSI        | MOSI      | SPI0 |
-| 6        | 4    | MISO        | MISO      | SPI0 |
-| 7        | 5    | CS          | CS        | SPI0 |
-| 12       | 9    | RST         | RESET     |      |
-|          |      | BL          | Backlight |      |
-
+| Pico pin | GPIO | Display PIN | Function   | Port |
+| -------- | ---- | ----------- | ---------- | ---- |
+| 4        | 2    | SCK         | SCK        | SPI0 |
+| 5        | 3    | MOSI        | MOSI       | SPI0 |
+| 6        | 4    | MISO        | MISO       | SPI0 |
+| 7        | 5    | CS          | CS         | SPI0 |
+| 12       | 9    | RST         | RESET      |      |
+|          |      | BL          | Backlight  |      |
+| 31       | 26   | VRx         | Joystick X | ADC0 |
+| 32       | 27   | VRy         | Joystick Y | ADC1 |
