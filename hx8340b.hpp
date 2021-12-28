@@ -3,6 +3,8 @@
 
 #include "gfx.hpp"
 #include "pico/stdlib.h"
+#include "pico/binary_info.h"
+#include "hardware/spi.h"
 
 #define HX8340B_LCDWIDTH                  176
 #define HX8340B_LCDHEIGHT                 220
@@ -69,8 +71,8 @@
 class Adafruit_HX8340B : public Adafruit_GFX 
 {
     public:
-        Adafruit_HX8340B(int8_t SID, int8_t SCLK, int8_t RST, int8_t CS);
-        //Adafruit_HX8340B(int8_t RST, int8_t CS);
+        //Adafruit_HX8340B(int8_t SID, int8_t SCLK, int8_t RST, int8_t CS); // Bit-banging
+        Adafruit_HX8340B(spi_inst_t *spi_port, int8_t mosi_pin, int8_t clk_pin, int8_t RST, int8_t CS);
 
         void begin();
         void setWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
@@ -96,7 +98,11 @@ class Adafruit_HX8340B : public Adafruit_GFX
         void writeData16(uint16_t c);
 
  private:
-    int8_t cs, rst, sid, sclk;
+    //int8_t _cs_pin, _rst_pin, sid, sclk;    // Bit-banging
+    spi_inst_t *_spi_port;
+    uint32_t _mosi_pin;
+    uint32_t _clk_pin;
+    uint8_t _cs_pin, _rst_pin;
 };
 
 

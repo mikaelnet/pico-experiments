@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
+#include "hardware/spi.h"
 
 #include "gfx.hpp"
 #include "hx8340b.hpp"
@@ -8,15 +9,24 @@
 #define LOW   0
 #define HIGH  1
 
-#define _chip_enable()    gpio_put(cs, LOW);
-#define _chip_disable()   gpio_put(cs, HIGH);
+#define _chip_enable()    gpio_put(_cs_pin, LOW);
+#define _chip_disable()   gpio_put(_cs_pin, HIGH);
 
-Adafruit_HX8340B::Adafruit_HX8340B(int8_t SID, int8_t SCLK, int8_t RST, int8_t CS) : Adafruit_GFX(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT) 
+/*Adafruit_HX8340B::Adafruit_HX8340B(int8_t SID, int8_t SCLK, int8_t RST, int8_t CS) : Adafruit_GFX(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT) 
 {
     sid   = SID;
     sclk  = SCLK;
-    rst   = RST;
-    cs    = CS;
+    _rst_pin   = RST;
+    _cs_pin    = CS;
+}*/
+
+Adafruit_HX8340B::Adafruit_HX8340B(spi_inst_t *spi_port, int8_t mosi_pin, int8_t clk_pin, int8_t RST, int8_t CS) : Adafruit_GFX(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT)
+{
+    _spi_port = spi_port;
+    _mosi_pin = mosi_pin;
+    _clk_pin = clk_pin;
+    _rst_pin   = RST;
+    _cs_pin    = CS;
 }
 
 #define DELAY_FLAG 0x80
@@ -58,17 +68,18 @@ static uint8_t initCmd[] = {
     HX8340B_N_RAMWR    , 0        // 14: Start GRAM write
 };
 
-void Adafruit_HX8340B::begin() 
+void Adafruit_HX8340B::begin()
 {
     // PIN directions and default output
-    gpio_init(rst);
-    gpio_set_dir(rst, GPIO_OUT);
-    gpio_put(rst, HIGH);
+    gpio_init(_rst_pin);
+    gpio_set_dir(_rst_pin, GPIO_OUT);
+    gpio_put(_rst_pin, HIGH);
 
-    gpio_init(cs);
-    gpio_set_dir(cs, GPIO_OUT);
+    gpio_init(_cs_pin);
+    gpio_set_dir(_cs_pin, GPIO_OUT);
     _chip_enable();
 
+    /* Bit-banging
     gpio_init(sclk);
     gpio_set_dir(sclk, GPIO_OUT);
     gpio_put(sclk, LOW);
@@ -76,6 +87,13 @@ void Adafruit_HX8340B::begin()
     gpio_init(sid);
     gpio_set_dir(sid, GPIO_OUT);
     gpio_put(sid, LOW);
+    */
+    spi_init(_spi_port, 64 * 1000 * 1000);   // 1MHz
+    gpio_set_function(_clk_pin, GPIO_FUNC_SPI);
+    gpio_set_function(_mosi_pin, GPIO_FUNC_SPI);
+    // TODO: Try bi_2pins_with_func and remove MISO pin 4
+    bi_decl(bi_3pins_with_func(4, _mosi_pin, _clk_pin, GPIO_FUNC_SPI));
+    spi_set_format(_spi_port, 9, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     // Perform a reset cycle
     reset();
@@ -106,47 +124,25 @@ void Adafruit_HX8340B::begin()
 
 void Adafruit_HX8340B::reset()
 {
-    gpio_put(rst, HIGH);
+    gpio_put(_rst_pin, HIGH);
     sleep_ms(100);
-    gpio_put(rst, LOW);
+    gpio_put(_rst_pin, LOW);
     sleep_ms(50);
-    gpio_put(rst, HIGH);
+    gpio_put(_rst_pin, HIGH);
     sleep_ms(50);
 }
 
 void Adafruit_HX8340B::writeCommand(uint8_t c) 
 {
-    gpio_put(sid, LOW);
-    gpio_put(sclk, HIGH);
-    gpio_put(sclk, LOW);
-    for (uint8_t bit = 0x80; bit ; bit >>= 1)
-    {
-        if (c & bit)
-            gpio_put(sid, HIGH);
-        else
-            gpio_put(sid, LOW);
-
-        gpio_put(sclk, HIGH);
-        gpio_put(sclk, LOW);
-    }
+    uint16_t value = c;
+    spi_write16_blocking(_spi_port, &value, 1);
 }
 
 
 void Adafruit_HX8340B::writeData(uint8_t c) 
 {
-    gpio_put(sid, HIGH);
-    gpio_put(sclk, HIGH);
-    gpio_put(sclk, LOW);
-    for (uint8_t bit = 0x80; bit ; bit >>= 1)
-    {
-        if (c & bit)
-            gpio_put(sid, HIGH);
-        else
-            gpio_put(sid, LOW);
-            
-        gpio_put(sclk, HIGH);
-        gpio_put(sclk, LOW);
-    }
+    uint16_t value = 0x0100 | c;
+    spi_write16_blocking(_spi_port, &value, 1);
 }
 
 void Adafruit_HX8340B::writeData16(uint16_t c) 

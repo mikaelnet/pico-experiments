@@ -22,7 +22,8 @@
 #define YELLOW          0xFFE0  
 #define WHITE           0xFFFF
 
-Adafruit_HX8340B display(TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
+//Adafruit_HX8340B display(TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
+Adafruit_HX8340B display(spi0, TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
 //GFXcanvas16 display(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT);
 
 float pi = 3.1415926;
