@@ -376,6 +376,69 @@ void Adafruit_GFX::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, 
     }
 }
 
+/**************************************************************************/
+/*!
+   @brief      Draw a PROGMEM-resident 1-bit image at the specified (x,y)
+   position, using the specified foreground color (unset bits are transparent).
+    @param    x   Top left corner x coordinate
+    @param    y   Top left corner y coordinate
+    @param    bitmap  byte array with monochrome bitmap
+    @param    w   Width of bitmap in pixels
+    @param    h   Height of bitmap in pixels
+    @param    color 16-bit 5-6-5 Color to draw with
+*/
+/**************************************************************************/
+void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color) 
+{
+    int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
+    uint8_t byte = 0;
+
+    for (int16_t j = 0; j < h; j++, y++) {
+        for (int16_t i = 0; i < w; i++) {
+            if (i & 7)
+                byte <<= 1;
+            else
+                byte = bitmap[j * byteWidth + i / 8];
+            
+            if (byte & 0x80)
+                drawPixel(x + i, y, color);
+        }
+    }
+}
+
+/**************************************************************************/
+/*!
+   @brief      Draw a PROGMEM-resident 1-bit image at the specified (x,y)
+   position, using the specified foreground (for set bits) and background (unset
+   bits) colors.
+    @param    x   Top left corner x coordinate
+    @param    y   Top left corner y coordinate
+    @param    bitmap  byte array with monochrome bitmap
+    @param    w   Width of bitmap in pixels
+    @param    h   Height of bitmap in pixels
+    @param    color 16-bit 5-6-5 Color to draw pixels with
+    @param    bg 16-bit 5-6-5 Color to draw background with
+*/
+/**************************************************************************/
+void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color, uint16_t bgColor) 
+{
+    int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
+    uint8_t byte = 0;
+
+    for (int16_t j = 0; j < h; j++, y++) {
+        for (int16_t i = 0; i < w; i++) {
+            if (i & 7)
+                byte <<= 1;
+            else
+                byte = bitmap[j * byteWidth + i / 8];
+            
+            if (byte & 0x80)
+                drawPixel(x + i, y, (byte & 0x80) ? color : bgColor);
+        }
+    }
+}
+
+
 /* ------------- text handling ----------- */
 
 void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint8_t size) 
