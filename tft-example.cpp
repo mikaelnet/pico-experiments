@@ -2,6 +2,7 @@
 #include "pico/types.h"
 #include "pico/printf.h"
 #include "hardware/adc.h"
+#include "hardware/pwm.h"
 
 #include "gfx.hpp"
 #include "gfxcanvas.hpp"
@@ -12,6 +13,7 @@
 #define TFT_CLK     2
 #define TFT_CS      5
 #define TFT_RST     9
+#define TFT_BL      14
 
 // Color definitions
 #define	BLACK           0x0000
@@ -222,6 +224,14 @@ void setup()
     display.begin();
     display.fillScreen(BLACK);
 
+    // Setup PWM for display backlight
+    gpio_set_function(TFT_BL, GPIO_FUNC_PWM);
+    uint slice_num = pwm_gpio_to_slice_num(TFT_BL);
+    pwm_set_wrap(slice_num, 3);
+    pwm_set_chan_level(slice_num, PWM_CHAN_A, 1);
+    pwm_set_enabled(slice_num, true);
+
+    // Setup ADC for joystick
     adc_init();
     adc_gpio_init(26);
     adc_gpio_init(27);
