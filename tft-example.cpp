@@ -4,6 +4,9 @@
 #include "hardware/adc.h"
 #include "hardware/pwm.h"
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "gfx.hpp"
 #include "gfxcanvas.hpp"
 #include "hx8340b.hpp"
@@ -37,6 +40,8 @@
 //Adafruit_HX8340B display(TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
 Adafruit_HX8340B display(spi0, TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
 RF24 nRF24l01Transmitter(spi1, RF24_MOSI, RF24_MISO, RF24_CLK, RF24_CE, RF24_CS, RF24_SPI_SPEED);
+const uint64_t nRF_read_address = 0x123456789A;
+const uint64_t nRF_write_address = 0x123456789B;
 //GFXcanvas16 display(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT);
 
 float pi = 3.1415926;
@@ -268,6 +273,19 @@ void setup()
     {
         printf("Radio hardware not responding\n");
     }
+
+    nRF24l01Transmitter.openWritingPipe(nRF_write_address);
+    nRF24l01Transmitter.openReadingPipe(1, nRF_read_address);
+
+    nRF24l01Transmitter.setPALevel(RF24_PA_HIGH);
+    nRF24l01Transmitter.setDataRate(RF24_250KBPS);
+    nRF24l01Transmitter.setChannel(0x34);   // TODO: Use a scanner to find a good value here
+    nRF24l01Transmitter.enableDynamicPayloads();
+    nRF24l01Transmitter.enableAckPayload();       // not used here
+    nRF24l01Transmitter.setRetries(0, 15);        // Smallest time between retries, max no. of retries
+    nRF24l01Transmitter.setAutoAck(true) ;
+
+    nRF24l01Transmitter.startListening();
 }
 
 #define CROSS_HAIR_SIZE 4
@@ -308,6 +326,9 @@ void loop()
     display.setCursor(0,0);
     display.setTextColor(WHITE);
     drawtext(buf);
+
+    const char *text = "Hello world!";
+    nRF24l01Transmitter.write(text, strlen(text));
 }
 
 #if false
