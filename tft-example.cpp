@@ -7,6 +7,7 @@
 #include "gfx.hpp"
 #include "gfxcanvas.hpp"
 #include "hx8340b.hpp"
+#include "RF24.hpp"
 
 #define TFT_MOSI    3
 #define TFT_MISO    4
@@ -25,8 +26,17 @@
 #define YELLOW          0xFFE0  
 #define WHITE           0xFFFF
 
+#define BTN_PIN     15
+
+#define RF24_MOSI   20
+#define RF24_MISO   16
+#define RF24_CLK    19
+#define RF24_CE     16 // TODO: Set this pin
+#define RF24_CS     17 // TODO: Set this pin
+
 //Adafruit_HX8340B display(TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
 Adafruit_HX8340B display(spi0, TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
+RF24 nRF24l01Transmitter(spi1, RF24_MOSI, RF24_MISO, RF24_CLK, RF24_CE, RF24_CS, RF24_SPI_SPEED);
 //GFXcanvas16 display(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT);
 
 float pi = 3.1415926;
@@ -218,37 +228,72 @@ void drawtext(const char *text)
     }
 }
 
+int button_pressed = 0;
+void push_button_callback(uint gpio, uint32_t events)
+{
+    if (gpio == BTN_PIN && events & GPIO_IRQ_EDGE_FALL) {
+        button_pressed ++;
+    }
+}
+
+#define PWM_WRAP_POINT  500
 void setup()
 {
     stdio_init_all();
+    setup_default_uart();
+    printf("Hello!\n");
     display.begin();
     display.fillScreen(BLACK);
 
     // Setup PWM for display backlight
     gpio_set_function(TFT_BL, GPIO_FUNC_PWM);
     uint slice_num = pwm_gpio_to_slice_num(TFT_BL);
-    pwm_set_wrap(slice_num, 3);
-    pwm_set_chan_level(slice_num, PWM_CHAN_A, 1);
+    pwm_set_wrap(slice_num, PWM_WRAP_POINT);
+    pwm_set_chan_level(slice_num, PWM_CHAN_A, PWM_WRAP_POINT/2);
     pwm_set_enabled(slice_num, true);
 
     // Setup ADC for joystick
     adc_init();
     adc_gpio_init(26);
     adc_gpio_init(27);
+    adc_set_temp_sensor_enabled(true);
+
+    // Setup joystick push button interrupt
+    gpio_init (BTN_PIN);
+    gpio_pull_up(BTN_PIN);
+    gpio_set_irq_enabled_with_callback(BTN_PIN, GPIO_IRQ_EDGE_FALL, true, &push_button_callback);
+
+    // nRF24l01 setup
+    if (!nRF24l01Transmitter.begin())
+    {
+        printf("Radio hardware not responding\n");
+    }
 }
 
 #define CROSS_HAIR_SIZE 4
 uint16_t last_X, last_Y;
 void loop()
 {
+    const uint adc_max = (1 << 12) - 1;
     adc_select_input(0);    // gpio 26, pin 31
     uint adc_x_raw = adc_read();
     adc_select_input(1);    // gpio 27, pin 32
     uint adc_y_raw = adc_read();
+    
+    adc_select_input(4);
+    float tempVoltage = adc_read() * 3.3f / adc_max; 
+    float temp = 27 - (tempVoltage - 0.706)/0.001721;
 
-    const uint adc_max = (1 << 12) - 1;
+    printf("X: %d, Y %d, btn %d, temp: %f\n", adc_x_raw, adc_y_raw, button_pressed, temp);
+
     uint16_t x = adc_x_raw * display.width() / adc_max;
     uint16_t y = adc_y_raw * display.height() / adc_max;
+
+    // Fade screen according to joystick
+    uint setPoint = adc_y_raw * PWM_WRAP_POINT / adc_max;
+    uint slice_num = pwm_gpio_to_slice_num(TFT_BL);
+    pwm_set_chan_level(slice_num, PWM_CHAN_A, setPoint);
+
 
     display.drawFastVLine(last_X, last_Y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, BLACK);
     display.drawFastHLine(last_X - CROSS_HAIR_SIZE, last_Y, CROSS_HAIR_SIZE * 2 + 1, BLACK);
@@ -257,8 +302,8 @@ void loop()
     last_X = x;
     last_Y = y;
 
-    char buf[20];
-    snprintf (buf, sizeof(buf), "X: %4d\nY: %4d", adc_x_raw, adc_y_raw);
+    char buf[40];
+    snprintf (buf, sizeof(buf), "X: %4d\nY: %4d\nBtn: %4d", adc_x_raw, adc_y_raw, button_pressed);
     display.setTextSize(1);
     display.setCursor(0,0);
     display.setTextColor(WHITE);

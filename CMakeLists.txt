@@ -13,6 +13,7 @@ add_executable(remote
         gfx.cpp
         hx8340b.cpp
         gfxcanvas.cpp
+        RF24.cpp
 )
 
 # pull in common dependencies
@@ -25,6 +26,10 @@ target_link_libraries(remote
         hardware_adc
         hardware_pwm
 )
+
+# enable usb output and disable uart on gpio 0/1
+pico_enable_stdio_usb(remote 1)
+pico_enable_stdio_uart(remote 0)
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(remote)

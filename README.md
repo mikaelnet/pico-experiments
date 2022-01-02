@@ -11,9 +11,13 @@ Contains as scaled-down port of the GFX library ported to rp2040.
 - [x] Control the TFT using hardware spi port
 - [ ] Investigate if a custom PIO 9-bit spi implementation would be better.
 - [x] Attach a joystick and visualize its position
-- [ ] Attach joystick button as command button
-- [ ] Adjust TFT backlight with PWM
+- [x] Attach joystick button as command button
+- [x] Adjust TFT backlight with PWM
+- [x] Send debug data on usb tty
 - [ ] Transmit data via a nRF24l01.
+- [ ] Run on two cores, where one draws the TFT and the other does the com.
+- [ ] Add a 8ch SPI ADC
+- [ ] 
 
 # Commands to remember
 * `export PICO_SDK_PATH=/home/pi/pico/pico-sdk`
