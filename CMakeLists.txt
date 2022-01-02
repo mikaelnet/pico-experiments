@@ -14,6 +14,7 @@ add_executable(transmitter
         hx8340b.cpp
         gfxcanvas.cpp
         RF24.cpp
+        display.cpp
 )
 
 add_executable(reciever

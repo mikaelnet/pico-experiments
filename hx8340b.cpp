@@ -327,7 +327,7 @@ void Adafruit_HX8340B::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint
 }
 
 
-uint16_t Adafruit_HX8340B::Color565(uint8_t r, uint8_t g, uint8_t b) 
+uint16_t Adafruit_HX8340B::color565(uint8_t r, uint8_t g, uint8_t b) 
 {
     return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }

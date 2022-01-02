@@ -85,7 +85,7 @@ class Adafruit_HX8340B : public Adafruit_GFX
         
         void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
 
-        uint16_t Color565(uint8_t r, uint8_t g, uint8_t b);
+        uint16_t color565(uint8_t r, uint8_t g, uint8_t b);
 
         void rawWrite(uint16_t color) { writeData16(color); };
         void drawBitmap(const uint16_t *buffer);
