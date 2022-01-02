@@ -1732,7 +1732,7 @@ private:
      *
      * @return Current value of status register
      */
-    uint8_t get_status(void);
+    uint8_t get_status();
 
     #if !defined (MINIMAL)
 

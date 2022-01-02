@@ -22,6 +22,7 @@ Contains as scaled-down port of the GFX library ported to rp2040.
 # Commands to remember
 * `export PICO_SDK_PATH=/home/pi/pico/pico-sdk`
 * from the build folder: `cmake .. && make -j4 && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program remote.elf verify"`
+* Terminal: `mimicom -b 115200 -o -D /dev/ttyACM0`
 
 # Hardware pins
 | Pico pin | GPIO | Display PIN | Function   | Port   |

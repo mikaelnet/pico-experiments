@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
-add_executable(remote
+add_executable(transmitter
         tft-example.cpp
         gfx.cpp
         hx8340b.cpp
@@ -16,20 +16,33 @@ add_executable(remote
         RF24.cpp
 )
 
+add_executable(reciever
+        reciever.cpp
+        RF24.cpp
+)
+
 # pull in common dependencies
-target_link_libraries(remote 
-        pico_stdlib 
-        pico_printf 
-        pico_malloc 
-        pico_mem_ops 
-        hardware_spi 
+target_link_libraries(transmitter 
+        pico_stdlib
+        pico_printf
+        #pico_malloc #
+        #pico_mem_ops #
+        hardware_spi
         hardware_adc
         hardware_pwm
 )
 
+target_link_libraries(reciever 
+        pico_stdlib 
+        pico_printf 
+        hardware_spi 
+)
+
 # enable usb output and disable uart on gpio 0/1
-pico_enable_stdio_usb(remote 1)
-pico_enable_stdio_uart(remote 0)
+pico_enable_stdio_usb(transmitter 1)
+pico_enable_stdio_uart(transmitter 0)
 
 # create map/bin/hex file etc.
-pico_add_extra_outputs(remote)
+pico_add_extra_outputs(transmitter)
+pico_add_extra_outputs(reciever)
+

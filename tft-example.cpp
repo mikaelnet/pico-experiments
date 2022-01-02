@@ -12,12 +12,16 @@
 #include "hx8340b.hpp"
 #include "RF24.hpp"
 
+#include "packets.h"
+
 #define TFT_MOSI    3
 #define TFT_MISO    4
 #define TFT_CLK     2
 #define TFT_CS      5
-#define TFT_RST     9
-#define TFT_BL      14
+#define TFT_RST     6
+
+#define TFT_BL      7
+#define TFT_BL_CHAN PWM_CHAN_B
 
 // Color definitions
 #define	BLACK           0x0000
@@ -29,20 +33,21 @@
 #define YELLOW          0xFFE0  
 #define WHITE           0xFFFF
 
-#define BTN_PIN     15
+#define BTN_PIN     22
 
-#define RF24_MOSI   20
-#define RF24_MISO   16
-#define RF24_CLK    19
-#define RF24_CE     16 // TODO: Set this pin
-#define RF24_CS     17 // TODO: Set this pin
+#define RF24_MOSI   11
+#define RF24_MISO   12
+#define RF24_CLK    10
+#define RF24_CS     13
+#define RF24_CE     14
 
-//Adafruit_HX8340B display(TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
 Adafruit_HX8340B display(spi0, TFT_MOSI, TFT_CLK, TFT_RST, TFT_CS);
-RF24 nRF24l01Transmitter(spi1, RF24_MOSI, RF24_MISO, RF24_CLK, RF24_CE, RF24_CS, RF24_SPI_SPEED);
-const uint64_t nRF_read_address = 0x123456789A;
-const uint64_t nRF_write_address = 0x123456789B;
-//GFXcanvas16 display(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT);
+RF24 radio(spi1, RF24_MOSI, RF24_MISO, RF24_CLK, RF24_CE, RF24_CS, RF24_SPI_SPEED);
+const uint64_t nRF_read_address = TRANSMITTER_ADDRESS;
+const uint64_t nRF_write_address = RECIEVER_ADDRESS;
+control_packet_t controlPacket;
+metrics_packet_t metricsPacket;
+
 
 float pi = 3.1415926;
 
@@ -254,7 +259,7 @@ void setup()
     gpio_set_function(TFT_BL, GPIO_FUNC_PWM);
     uint slice_num = pwm_gpio_to_slice_num(TFT_BL);
     pwm_set_wrap(slice_num, PWM_WRAP_POINT);
-    pwm_set_chan_level(slice_num, PWM_CHAN_A, PWM_WRAP_POINT/2);
+    pwm_set_chan_level(slice_num, TFT_BL_CHAN, PWM_WRAP_POINT/2);
     pwm_set_enabled(slice_num, true);
 
     // Setup ADC for joystick
@@ -269,23 +274,29 @@ void setup()
     gpio_set_irq_enabled_with_callback(BTN_PIN, GPIO_IRQ_EDGE_FALL, true, &push_button_callback);
 
     // nRF24l01 setup
-    if (!nRF24l01Transmitter.begin())
+    if (!radio.begin())
     {
         printf("Radio hardware not responding\n");
     }
 
-    nRF24l01Transmitter.openWritingPipe(nRF_write_address);
-    nRF24l01Transmitter.openReadingPipe(1, nRF_read_address);
+    radio.openWritingPipe(nRF_write_address);
+    radio.openReadingPipe(1, nRF_read_address);
 
-    nRF24l01Transmitter.setPALevel(RF24_PA_HIGH);
-    nRF24l01Transmitter.setDataRate(RF24_250KBPS);
-    nRF24l01Transmitter.setChannel(0x34);   // TODO: Use a scanner to find a good value here
-    nRF24l01Transmitter.enableDynamicPayloads();
-    nRF24l01Transmitter.enableAckPayload();       // not used here
-    nRF24l01Transmitter.setRetries(0, 15);        // Smallest time between retries, max no. of retries
-    nRF24l01Transmitter.setAutoAck(true) ;
+    radio.setPALevel(RF24_PA_HIGH);
+    radio.setDataRate(RF24_250KBPS);
+    radio.setChannel(0x34);   // TODO: Use a scanner to find a good value here
+    radio.enableDynamicPayloads();
+    radio.enableAckPayload();       // not used here
+    radio.setRetries(0, 15);        // Smallest time between retries, max no. of retries
+    radio.setAutoAck(true) ;
 
-    nRF24l01Transmitter.startListening();
+    radio.startListening();
+
+    metricsPacket.recieved = 0;
+
+    printf("Channel: %d\n", radio.getChannel());
+    printf("PA level: %d\n", radio.getPALevel());
+    printf("Data rate: %d\n", radio.getDataRate());
 }
 
 #define CROSS_HAIR_SIZE 4
@@ -303,6 +314,16 @@ void loop()
     float temp = 27 - (tempVoltage - 0.706)/0.001721;
 
     printf("X: %d, Y %d, btn %d, temp: %f\n", adc_x_raw, adc_y_raw, button_pressed, temp);
+    printf("Channel: %d\n", radio.getChannel());
+    printf("PA level: %d\n", radio.getPALevel());
+    printf("Data rate: %d\n", radio.getDataRate());
+
+    controlPacket.ch1 = adc_x_raw;
+    controlPacket.ch2 = adc_y_raw;
+
+    radio.stopListening();
+    radio.write(&controlPacket, sizeof(controlPacket));
+    radio.startListening();
 
     uint16_t x = adc_x_raw * display.width() / adc_max;
     uint16_t y = adc_y_raw * display.height() / adc_max;
@@ -310,7 +331,7 @@ void loop()
     // Fade screen according to joystick
     uint setPoint = adc_y_raw * PWM_WRAP_POINT / adc_max;
     uint slice_num = pwm_gpio_to_slice_num(TFT_BL);
-    pwm_set_chan_level(slice_num, PWM_CHAN_A, setPoint);
+    pwm_set_chan_level(slice_num, TFT_BL_CHAN, setPoint);
 
 
     display.drawFastVLine(last_X, last_Y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, BLACK);
@@ -327,8 +348,20 @@ void loop()
     display.setTextColor(WHITE);
     drawtext(buf);
 
-    const char *text = "Hello world!";
-    nRF24l01Transmitter.write(text, strlen(text));
+    absolute_time_t timeout = make_timeout_time_ms(20);
+    while (!radio.available() && time_reached(timeout)) {
+        tight_loop_contents();
+    }
+    if (radio.available()) {
+        radio.read(&metricsPacket, sizeof(metricsPacket));
+    }
+
+    if (metricsPacket.recieved > 0) {
+        snprintf (buf, sizeof(buf), "Reciever got %d packets", metricsPacket.recieved);
+        display.setCursor(0, 4);
+        display.setTextColor(GREEN);
+        drawtext(buf);
+    }
 }
 
 #if false

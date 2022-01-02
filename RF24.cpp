@@ -914,7 +914,7 @@ void RF24::setPALevel(uint8_t level, bool lnaEnable)
 
 /****************************************************************************/
 
-uint8_t RF24::getPALevel(void)
+uint8_t RF24::getPALevel()
 {
 
     return (read_register(RF_SETUP) & (_BV(RF_PWR_LOW) | _BV(RF_PWR_HIGH))) >> 1;
@@ -942,7 +942,7 @@ bool RF24::setDataRate(rf24_datarate_e speed)
 
 /****************************************************************************/
 
-rf24_datarate_e RF24::getDataRate(void)
+rf24_datarate_e RF24::getDataRate()
 {
     rf24_datarate_e result;
     uint8_t dr = read_register(RF_SETUP) & (_BV(RF_DR_LOW) | _BV(RF_DR_HIGH));
