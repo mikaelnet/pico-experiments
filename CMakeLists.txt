@@ -22,6 +22,21 @@ add_executable(reciever
         RF24.cpp
 )
 
+# Test of sharing pio and gpio pin
+add_executable(blink_pio)
+
+pico_generate_pio_header(blink_pio ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+
+target_sources(blink_pio PRIVATE blink.c)
+
+target_link_libraries(blink_pio PRIVATE
+        pico_stdlib
+        hardware_pio
+)
+
+pico_add_extra_outputs(blink_pio)
+
+
 # pull in common dependencies
 target_link_libraries(transmitter 
         pico_stdlib

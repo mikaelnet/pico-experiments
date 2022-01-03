@@ -1,0 +1,19 @@
+.program blink
+
+loop:
+    pull
+    out pins, 1
+    jmp loop
+
+% c-sdk {
+static inline void blink_program_init(PIO pio, uint stateMachine, uint locationOffset, uint pin) {
+    pio_sm_config config = blink_program_get_default_config(locationOffset);
+
+    sm_config_set_out_pins(&config, pin, 1);
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, stateMachine, pin, 1, true);
+
+    pio_sm_init(pio, stateMachine, locationOffset, &config);
+    pio_sm_set_enabled(pio, stateMachine, true);
+}
+%}
