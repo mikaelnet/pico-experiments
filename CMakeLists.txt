@@ -25,6 +25,7 @@ add_executable(reciever
 # pull in common dependencies
 target_link_libraries(transmitter 
         pico_stdlib
+        pico_multicore
         pico_printf
         #pico_malloc #
         #pico_mem_ops #

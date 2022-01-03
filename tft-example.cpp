@@ -1,6 +1,7 @@
 #include "pico/stdlib.h"
 #include "pico/types.h"
 #include "pico/printf.h"
+#include "pico/multicore.h"
 #include "hardware/adc.h"
 
 #include <stdlib.h>
@@ -39,10 +40,34 @@ void push_button_callback(uint gpio, uint32_t events)
     }
 }
 
+mutex_t radio_channels_mutex;
+
 const uint8_t num_channels = 126;
-uint8_t channel_values[num_channels];
-uint channel_pos = 0;
-uint repetitions = 0;
+uint channel_values[num_channels];
+
+void core1_radio_scanner() 
+{
+    uint channel_pos = 0;
+
+    while (true) 
+    {
+        radio.setChannel(channel_pos);
+        radio.startListening();
+        sleep_us(128);
+        radio.stopListening();
+        
+        if (radio.testCarrier()) {
+            mutex_enter_blocking(&radio_channels_mutex);
+            channel_values[channel_pos] ++;
+            mutex_exit(&radio_channels_mutex);
+        }
+
+        channel_pos ++;
+        if (channel_pos >= num_channels)
+            channel_pos = 0;
+    }
+}
+
 
 absolute_time_t loopStart;
 
@@ -51,6 +76,8 @@ void setup()
 {
     stdio_init_all();
     setup_default_uart();
+    mutex_init(&radio_channels_mutex);
+    
     printf("Hello!\n");
     display.begin();
     display.fillScreen(BLACK);
@@ -109,7 +136,7 @@ void setup()
 uint16_t last_X, last_Y;
 
 inline int map(int x, int in_min, int in_max, int out_min, int out_max) {  
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    return (x - in_min) * (out_max - out_min + 1) / (in_max - in_min + 1) + out_min;
 }
 
 void loop()
@@ -139,18 +166,17 @@ void loop()
     //radio.write(&controlPacket, sizeof(controlPacket));
     //radio.startListening();
 
-
-
-    radio.setChannel(channel_pos);
-    radio.startListening();
-    sleep_us(128);
-    radio.stopListening();
-    if (radio.testCarrier()) {
-        channel_values[channel_pos] ++;
+    uint bar_graphs[num_channels];
+    mutex_enter_blocking(&radio_channels_mutex);
+    memcpy(bar_graphs, channel_values, sizeof(bar_graphs));
+    mutex_exit(&radio_channels_mutex);
+    uint max = 0;
+    for (int i=0; i < num_channels ; i ++) {
+        if (bar_graphs[i] > max)
+            max = bar_graphs[i];
     }
-    channel_pos ++;
-    if (channel_pos >= num_channels)
-        channel_pos = 0;
+    if (max < 20)
+        max = 20;
 
     uint left = (display.width() - num_channels)/2;
     uint bottom = display.height() - 5;
@@ -163,18 +189,13 @@ void loop()
     display.drawFastVLine (left + num_channels*3/4, bottom, 2, lineColor);
     display.drawFastVLine (left + num_channels, bottom, 4, lineColor);
 
-    uint max = 0;
-    for (int i=0; i < num_channels ; i ++) {
-        if (channel_values[i] > max)
-            max = channel_values[i];
-    }
-    
     const int graphHeight = 120;
     for (int i=0 ; i < num_channels ; i ++) {
-        int height = map (channel_values[i], 0, max, 0, graphHeight);
+        int height = map (bar_graphs[i], 0, max, 0, graphHeight);
         display.drawFastVLine(left + i, bottom - graphHeight, graphHeight - height, BLACK);
         display.drawFastVLine(left + i, bottom - height, height, WHITE);
     }
+
 
     uint16_t x = adc_x_raw * display.width() / adc_max;
     uint16_t y = adc_y_raw * display.height() / adc_max;
@@ -295,6 +316,7 @@ void loop()
 int main()
 {
     setup();
+    multicore_launch_core1(core1_radio_scanner);
     while (true)
     {
         loop();

@@ -15,13 +15,16 @@ Contains as scaled-down port of the GFX library ported to rp2040.
 - [x] Adjust TFT backlight with PWM
 - [x] Send debug data on usb tty
 - [ ] Transmit data via a nRF24l01.
+- [x] Radio scan for free air channels
+- [x] Experiment with two cores - try mutexes
 - [ ] Run on two cores, where one draws the TFT and the other does the com.
 - [ ] Add a 8ch SPI ADC
 - [ ] 
 
 # Commands to remember
 * `export PICO_SDK_PATH=/home/pi/pico/pico-sdk`
-* from the build folder: `cmake .. && make -j4 && openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program remote.elf verify"`
+* from the build folder: `cmake .. && make -j4`
+* `openocd -f interface/raspberrypi-swd.cfg -f target/rp2040.cfg -c "program transmitter.elf verify reset exit"`
 * Terminal: `mimicom -b 115200 -o -D /dev/ttyACM0`
 
 # Hardware pins
