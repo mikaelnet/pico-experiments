@@ -8,7 +8,10 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
-add_executable(transmitter
+add_executable(transmitter)
+pico_generate_pio_header(transmitter ${CMAKE_CURRENT_LIST_DIR}/spi9.pio)
+target_sources(transmitter
+        PRIVATE
         tft-example.cpp
         gfx.cpp
         hx8340b.cpp
@@ -17,25 +20,27 @@ add_executable(transmitter
         display.cpp
 )
 
+
+
 add_executable(reciever
         reciever.cpp
         RF24.cpp
 )
 
 # Test of sharing pio and gpio pin
-add_executable(blink_pio)
+#add_executable(blink_pio)
 
-pico_generate_pio_header(blink_pio ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
+#pico_generate_pio_header(blink_pio ${CMAKE_CURRENT_LIST_DIR}/blink.pio)
 
-target_sources(blink_pio PRIVATE blink.c)
+#target_sources(blink_pio PRIVATE blink.c)
 
-target_link_libraries(blink_pio PRIVATE
-        pico_stdlib
-        hardware_pio
-        hardware_dma
-)
+#target_link_libraries(blink_pio PRIVATE
+        #pico_stdlib
+        #hardware_pio
+        #hardware_dma
+#)
 
-pico_add_extra_outputs(blink_pio)
+#pico_add_extra_outputs(blink_pio)
 
 
 # pull in common dependencies
@@ -48,6 +53,8 @@ target_link_libraries(transmitter
         hardware_spi
         hardware_adc
         hardware_pwm
+        hardware_pio
+        hardware_dma
 )
 
 target_link_libraries(reciever 

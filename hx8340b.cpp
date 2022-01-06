@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
-#include "hardware/spi.h"
+#include "hardware/dma.h"
+#include "hardware/pio.h"
+#include "spi9.pio.h"
 
 #include "gfx.hpp"
 #include "hx8340b.hpp"
@@ -9,24 +11,15 @@
 #define LOW   0
 #define HIGH  1
 
-#define _chip_enable()    gpio_put(_cs_pin, LOW);
-#define _chip_disable()   gpio_put(_cs_pin, HIGH);
+#define COMMAND 0x00
+#define DATA    0x01
 
-/*Adafruit_HX8340B::Adafruit_HX8340B(int8_t SID, int8_t SCLK, int8_t RST, int8_t CS) : Adafruit_GFX(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT) 
+Adafruit_HX8340B::Adafruit_HX8340B(PIO pio, int8_t mosi_pin, int8_t clk_pin, int8_t RST) : Adafruit_GFX(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT)
 {
-    sid   = SID;
-    sclk  = SCLK;
-    _rst_pin   = RST;
-    _cs_pin    = CS;
-}*/
-
-Adafruit_HX8340B::Adafruit_HX8340B(spi_inst_t *spi_port, int8_t mosi_pin, int8_t clk_pin, int8_t RST, int8_t CS) : Adafruit_GFX(HX8340B_LCDWIDTH, HX8340B_LCDHEIGHT)
-{
-    _spi_port = spi_port;
+    _pio = pio;
     _mosi_pin = mosi_pin;
     _clk_pin = clk_pin;
     _rst_pin   = RST;
-    _cs_pin    = CS;
 }
 
 #define DELAY_FLAG 0x80
@@ -75,31 +68,19 @@ void Adafruit_HX8340B::begin()
     gpio_set_dir(_rst_pin, GPIO_OUT);
     gpio_put(_rst_pin, HIGH);
 
-    gpio_init(_cs_pin);
-    gpio_set_dir(_cs_pin, GPIO_OUT);
-    _chip_enable();
+    uint offset = pio_add_program (_pio, &spi9_program);
+    _stateMachine = pio_claim_unused_sm(_pio, true);
+    // 7.8125 -> 16MHz
+    spi9_program_init(_pio, _stateMachine, offset, 2.0f, _clk_pin, _mosi_pin);
 
-    /* Bit-banging
-    gpio_init(sclk);
-    gpio_set_dir(sclk, GPIO_OUT);
-    gpio_put(sclk, LOW);
-
-    gpio_init(sid);
-    gpio_set_dir(sid, GPIO_OUT);
-    gpio_put(sid, LOW);
-    */
-    spi_init(_spi_port, 1 * 1000 * 1000);   // 64MHz
-    gpio_set_function(_clk_pin, GPIO_FUNC_SPI);
-    gpio_set_function(_mosi_pin, GPIO_FUNC_SPI);
-    // TODO: Try bi_2pins_with_func and remove MISO pin 4
-    bi_decl(bi_2pins_with_func(_mosi_pin, _clk_pin, GPIO_FUNC_SPI));
-    spi_set_format(_spi_port, 9, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    _dmaChannel = dma_claim_unused_channel(true);
+    dma_channel_config c = dma_channel_get_default_config(_dmaChannel);
+    channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
+    channel_config_set_dreq(&c, pio_get_dreq(_pio, _stateMachine, true));
+    dma_channel_configure(_dmaChannel, &c, &_pio->txf[_stateMachine], NULL, 0, false);
 
     // Perform a reset cycle
     reset();
-
-    // Initialize command sequence
-    _chip_enable();
 
     uint8_t numCommands, numArgs;
     uint16_t ms;
@@ -118,8 +99,11 @@ void Adafruit_HX8340B::begin()
         if (ms)
             sleep_ms(*addr ++);
     }
+}
 
-    _chip_disable();
+void Adafruit_HX8340B::end()
+{
+    dma_channel_unclaim(_dmaChannel);
 }
 
 void Adafruit_HX8340B::reset()
@@ -134,29 +118,56 @@ void Adafruit_HX8340B::reset()
 
 void Adafruit_HX8340B::writeCommand(uint8_t c) 
 {
-    uint16_t value = c;
-    spi_write16_blocking(_spi_port, &value, 1);
-}
+    waitUntilReady();
 
+    //uint16_t value = c;
+    //spi_write16_blocking(_spi_port, &value, 1);
+    pio_sm_put_blocking(_pio, _stateMachine, COMMAND);
+    pio_sm_put_blocking(_pio, _stateMachine, 1);
+    pio_sm_put_blocking(_pio, _stateMachine, c);
+}
 
 void Adafruit_HX8340B::writeData(uint8_t c) 
 {
-    uint16_t value = 0x0100 | c;
-    spi_write16_blocking(_spi_port, &value, 1);
+    waitUntilReady();
+
+    //uint16_t value = 0x0100 | c;
+    //spi_write16_blocking(_spi_port, &value, 1);
+    pio_sm_put_blocking(_pio, _stateMachine, DATA);
+    pio_sm_put_blocking(_pio, _stateMachine, 1);
+    pio_sm_put_blocking(_pio, _stateMachine, c);
 }
 
 void Adafruit_HX8340B::writeData16(uint16_t c) 
 {
-    uint16_t value[2];
-    value[0] = 0x0100 | c >> 8;
-    value[1] = 0x0100 | (c & 0xFF);
-    spi_write16_blocking(_spi_port, value, 2);
+    waitUntilReady();
+
+    //uint16_t value[2];
+    //value[0] = 0x0100 | c >> 8;
+    //value[1] = 0x0100 | (c & 0xFF);
+    //spi_write16_blocking(_spi_port, value, 2);
+
+    pio_sm_put_blocking(_pio, _stateMachine, DATA);
+    pio_sm_put_blocking(_pio, _stateMachine, 2);
+    pio_sm_put_blocking(_pio, _stateMachine, c >> 8);
+    pio_sm_put_blocking(_pio, _stateMachine, c & 0xFF);
+}
+
+void Adafruit_HX8340B::writeData(uint8_t *data, uint count)
+{
+    waitUntilReady();
+
+    pio_sm_put_blocking(_pio, _stateMachine, DATA);
+    pio_sm_put_blocking(_pio, _stateMachine, count);
+    while (count > 0) {
+        pio_sm_put_blocking(_pio, _stateMachine, *data ++);
+        count --;
+    }
 }
 
 void Adafruit_HX8340B::setWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
     uint8_t t0, t1;
-    _chip_enable();
 
     switch(_rotation) {
         case 1:
@@ -185,17 +196,24 @@ void Adafruit_HX8340B::setWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
             break;
     }
 
+    /*uint8_t rawData[] = { 
+        COMMAND, 1, HX8340B_N_CASET,
+        DATA,    4, 0, x0, 0, x1,   
+        COMMAND, 1, HX8340B_N_PASET,
+        DATA,    4, 0, y0, 0, y1,   
+        COMMAND, 1, HX8340B_N_RAMWR 
+    };
+
+    waitUntilReady();
+    dma_channel_transfer_from_buffer_now(_dmaChannel, &rawData[0], count_of(rawData));*/
+
     writeCommand(HX8340B_N_CASET); // Column addr set
     writeData(0); writeData(x0);   // X start
     writeData(0); writeData(x1);   // X end
-  
     writeCommand(HX8340B_N_PASET); // Page addr set
     writeData(0); writeData(y0);   // Y start
     writeData(0); writeData(y1);   // Y end
-
     writeCommand(HX8340B_N_RAMWR);
-
-    _chip_disable();
 }
 
 void Adafruit_HX8340B::fillScreen(uint16_t c) 
@@ -204,8 +222,6 @@ void Adafruit_HX8340B::fillScreen(uint16_t c)
 
     setWindow(0, 0, _width-1, _height-1);
 
-    _chip_enable();
-
     for (y = _height; y > 0; y--)
     {
         for(x = _width; x > 0; x--) 
@@ -213,14 +229,11 @@ void Adafruit_HX8340B::fillScreen(uint16_t c)
             writeData16(c);
         }
     }
-
-    _chip_disable();
 }
 
-void Adafruit_HX8340B::pushColor(uint16_t color) {
-    _chip_enable();
+void Adafruit_HX8340B::pushColor(uint16_t color) 
+{
     writeData16(color);
-    _chip_disable();
 }
 
 // the most basic function, set a single pixel
@@ -254,11 +267,9 @@ void Adafruit_HX8340B::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t c
   
     setWindow(x, y, x, y + h - 1);
 
-    _chip_enable();
     while (h--) {
         writeData16(color);
     }
-    _chip_disable();
 }
 
 void Adafruit_HX8340B::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) 
@@ -281,11 +292,9 @@ void Adafruit_HX8340B::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t c
     }
     setWindow(x, y, x + w - 1, y);
 
-    _chip_enable();
     while (w--) {
         writeData16(color);
     }
-    _chip_disable();
 }
 
 void Adafruit_HX8340B::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) 
@@ -319,29 +328,27 @@ void Adafruit_HX8340B::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint
     setWindow(x, y, x + w - 1, y + h - 1);
     int32_t i  = (int32_t)w * (int32_t)h;
 
-    _chip_enable();
     while(i--) {
         writeData16(color);
     }
-    _chip_disable();
 }
 
 
 uint16_t Adafruit_HX8340B::color565(uint8_t r, uint8_t g, uint8_t b) 
 {
-    return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+    //return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+    //return ((b & 0xF8) << 8) | ((g & 0xFC) << 3) | (r >> 3);
+    return (r & 0xF8) | ((b >> 3) << 8) | ((g & 0x1C) << 11) | ((g & 0xE0) >> 5);
 }
 
 void Adafruit_HX8340B::drawBitmap(const uint16_t *buffer)
 {
     setWindow(0, 0, _width-1, _height-1);
 
-    uint16_t i = WIDTH * HEIGHT;
-    const uint16_t *ptr = buffer;
-    _chip_enable();
-    while (i--) {
-        writeData16(*ptr ++);
-    }
-    _chip_disable();
+    const uint len = WIDTH * HEIGHT * 2;
+    waitUntilReady();
+    pio_sm_put_blocking(_pio, _stateMachine, DATA);
+    pio_sm_put_blocking(_pio, _stateMachine, len);
 
+    dma_channel_transfer_from_buffer_now(_dmaChannel, buffer, len);
 }

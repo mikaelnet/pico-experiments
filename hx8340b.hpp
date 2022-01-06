@@ -4,7 +4,8 @@
 #include "gfx.hpp"
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
-#include "hardware/spi.h"
+#include "hardware/pio.h"
+#include "hardware/dma.h"
 
 #define HX8340B_LCDWIDTH                  176
 #define HX8340B_LCDHEIGHT                 220
@@ -72,9 +73,11 @@ class Adafruit_HX8340B : public Adafruit_GFX
 {
     public:
         //Adafruit_HX8340B(int8_t SID, int8_t SCLK, int8_t RST, int8_t CS); // Bit-banging
-        Adafruit_HX8340B(spi_inst_t *spi_port, int8_t mosi_pin, int8_t clk_pin, int8_t RST, int8_t CS);
+        //Adafruit_HX8340B(spi_inst_t *spi_port, int8_t mosi_pin, int8_t clk_pin, int8_t RST, int8_t CS);
+        Adafruit_HX8340B(PIO pio, int8_t mosi_pin, int8_t clk_pin, int8_t RST);
 
         void begin();
+        void end();
         void setWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
         void fillScreen(uint16_t c);
         void pushColor(uint16_t c);
@@ -90,19 +93,26 @@ class Adafruit_HX8340B : public Adafruit_GFX
         void rawWrite(uint16_t color) { writeData16(color); };
         void drawBitmap(const uint16_t *buffer);
 
+        //bool isReady() { return !pio_sm_is_tx_fifo_full(_pio, _stateMachine); };
+        void waitUntilReady() { dma_channel_wait_for_finish_blocking(_dmaChannel); }
+
     private:
         void reset();
+
 
         void writeCommand(uint8_t c);
         void writeData(uint8_t c);
         void writeData16(uint16_t c);
+        void writeData(uint8_t *data, uint count);
 
- private:
-    //int8_t _cs_pin, _rst_pin, sid, sclk;    // Bit-banging
-    spi_inst_t *_spi_port;
-    uint32_t _mosi_pin;
-    uint32_t _clk_pin;
-    uint8_t _cs_pin, _rst_pin;
+        PIO _pio;
+        uint _stateMachine;
+        int _dmaChannel;
+        //spi_inst_t *_spi_port;
+        uint32_t _mosi_pin;
+        uint32_t _clk_pin;
+        //uint8_t _cs_pin;
+        uint8_t _rst_pin;
 };
 
 

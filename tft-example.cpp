@@ -79,8 +79,8 @@ void setup()
     mutex_init(&radio_channels_mutex);
     
     printf("Hello!\n");
-    display.begin();
-    display.fillScreen(BLACK);
+    tft.begin();
+    tft.fillScreen(BLACK);
 
     // Setup PWM for display backlight
     gpio_set_function(TFT_BL, GPIO_FUNC_PWM);
@@ -139,8 +139,11 @@ inline int map(int x, int in_min, int in_max, int out_min, int out_max) {
     return (x - in_min) * (out_max - out_min + 1) / (in_max - in_min + 1) + out_min;
 }
 
+uint drawTime_us = 0;
 void loop()
 {
+    absolute_time_t computeStart = get_absolute_time();
+
     const uint adc_max = (1 << 12) - 1;
     adc_select_input(0);    // gpio 26, pin 31
     uint adc_x_raw = adc_read();
@@ -178,27 +181,27 @@ void loop()
     if (max < 20)
         max = 20;
 
-    uint left = (display.width() - num_channels)/2;
-    uint bottom = display.height() - 5;
+    uint left = (canvas->width() - num_channels)/2;
+    uint bottom = canvas->height() - 5;
     
-    uint16_t lineColor = display.color565(0x80, 0x80, 0x80);
-    display.drawFastHLine (left, bottom, num_channels, lineColor);
-    display.drawFastVLine (left, bottom, 4, lineColor);
-    display.drawFastVLine (left + num_channels/4, bottom, 2, lineColor);
-    display.drawFastVLine (left + num_channels/2, bottom, 4, lineColor);
-    display.drawFastVLine (left + num_channels*3/4, bottom, 2, lineColor);
-    display.drawFastVLine (left + num_channels, bottom, 4, lineColor);
+    uint16_t lineColor = tft.color565(0x80, 0x80, 0x80);
+    canvas->drawFastHLine (left, bottom, num_channels, lineColor);
+    canvas->drawFastVLine (left, bottom, 4, lineColor);
+    canvas->drawFastVLine (left + num_channels/4, bottom, 2, lineColor);
+    canvas->drawFastVLine (left + num_channels/2, bottom, 4, lineColor);
+    canvas->drawFastVLine (left + num_channels*3/4, bottom, 2, lineColor);
+    canvas->drawFastVLine (left + num_channels, bottom, 4, lineColor);
 
     const int graphHeight = 120;
     for (int i=0 ; i < num_channels ; i ++) {
         int height = map (bar_graphs[i], 0, max, 0, graphHeight);
-        display.drawFastVLine(left + i, bottom - graphHeight, graphHeight - height, BLACK);
-        display.drawFastVLine(left + i, bottom - height, height, WHITE);
+        canvas->drawFastVLine(left + i, bottom - graphHeight, graphHeight - height, BLACK);
+        canvas->drawFastVLine(left + i, bottom - height, height, WHITE);
     }
 
 
-    uint16_t x = adc_x_raw * display.width() / adc_max;
-    uint16_t y = adc_y_raw * display.height() / adc_max;
+    uint16_t x = adc_x_raw * canvas->width() / adc_max;
+    uint16_t y = adc_y_raw * canvas->height() / adc_max;
 
     // Fade screen according to joystick
     uint setPoint = adc_y_raw * PWM_WRAP_POINT / adc_max;
@@ -206,18 +209,18 @@ void loop()
     pwm_set_chan_level(slice_num, TFT_BL_CHAN, setPoint);
 
 
-    display.drawFastVLine(last_X, last_Y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, BLACK);
-    display.drawFastHLine(last_X - CROSS_HAIR_SIZE, last_Y, CROSS_HAIR_SIZE * 2 + 1, BLACK);
-    display.drawFastVLine(x, y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, 0b1111110000010000);
-    display.drawFastHLine(x - CROSS_HAIR_SIZE, y, CROSS_HAIR_SIZE * 2 + 1, 0b1111110000010000);
+    canvas->drawFastVLine(last_X, last_Y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, BLACK);
+    canvas->drawFastHLine(last_X - CROSS_HAIR_SIZE, last_Y, CROSS_HAIR_SIZE * 2 + 1, BLACK);
+    canvas->drawFastVLine(x, y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, 0b0001000011111100);
+    canvas->drawFastHLine(x - CROSS_HAIR_SIZE, y, CROSS_HAIR_SIZE * 2 + 1, 0b0001000011111100);
     last_X = x;
     last_Y = y;
 
     char buf[40];
     snprintf (buf, sizeof(buf), "X: %4d\nY: %4d\nBtn: %4d", adc_x_raw, adc_y_raw, button_pressed);
-    display.setTextSize(1);
-    display.setCursor(0,0);
-    display.setTextColor(WHITE);
+    canvas->setTextSize(1);
+    canvas->setCursor(0,0);
+    canvas->setTextColor(WHITE);
     drawtext(buf);
 
     /*absolute_time_t timeout = make_timeout_time_ms(20);
@@ -238,12 +241,25 @@ void loop()
 
     uint frameTime_us = absolute_time_diff_us(loopStart, get_absolute_time());
     loopStart = get_absolute_time();
+
+    uint computeTime_us = absolute_time_diff_us(computeStart, get_absolute_time());
+
+    canvas->setTextSize(1);
+    canvas->setTextColor(GREEN);
+
     snprintf(buf, sizeof(buf), "FPS %.2f", 1000000.0f/frameTime_us);
-    display.setTextSize(1);
-    display.setCursor(100, 0);
-    display.setTextColor(GREEN);
+    canvas->setCursor(100, 0);
+    drawtext(buf);
+    snprintf(buf, sizeof(buf), "comp %d us", computeTime_us);
+    canvas->setCursor(100, 12);
+    drawtext(buf);
+    snprintf(buf, sizeof(buf), "draw %d us", drawTime_us);
+    canvas->setCursor(100, 24);
     drawtext(buf);
 
+    absolute_time_t drawStart = get_absolute_time();
+    tft.drawBitmap(canvas->getBuffer());
+    drawTime_us = absolute_time_diff_us(drawStart, get_absolute_time());
 }
 
 #if false
