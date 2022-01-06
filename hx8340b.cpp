@@ -88,7 +88,7 @@ void Adafruit_HX8340B::begin()
     gpio_set_dir(sid, GPIO_OUT);
     gpio_put(sid, LOW);
     */
-    spi_init(_spi_port, 64 * 1000 * 1000);   // 64MHz
+    spi_init(_spi_port, 1 * 1000 * 1000);   // 64MHz
     gpio_set_function(_clk_pin, GPIO_FUNC_SPI);
     gpio_set_function(_mosi_pin, GPIO_FUNC_SPI);
     // TODO: Try bi_2pins_with_func and remove MISO pin 4

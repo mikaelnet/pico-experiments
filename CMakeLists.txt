@@ -32,6 +32,7 @@ target_sources(blink_pio PRIVATE blink.c)
 target_link_libraries(blink_pio PRIVATE
         pico_stdlib
         hardware_pio
+        hardware_dma
 )
 
 pico_add_extra_outputs(blink_pio)
