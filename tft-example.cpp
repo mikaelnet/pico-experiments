@@ -250,16 +250,20 @@ void loop()
     snprintf(buf, sizeof(buf), "FPS %.2f", 1000000.0f/frameTime_us);
     canvas->setCursor(100, 0);
     drawtext(buf);
-    snprintf(buf, sizeof(buf), "comp %d us", computeTime_us);
+    snprintf(buf, sizeof(buf), "comp %dus", computeTime_us);
     canvas->setCursor(100, 12);
     drawtext(buf);
-    snprintf(buf, sizeof(buf), "draw %d us", drawTime_us);
+    snprintf(buf, sizeof(buf), "draw %dus", drawTime_us);
     canvas->setCursor(100, 24);
     drawtext(buf);
 
-    absolute_time_t drawStart = get_absolute_time();
-    tft.drawBitmap(canvas->getBuffer());
-    drawTime_us = absolute_time_diff_us(drawStart, get_absolute_time());
+    if (tft.isReady())
+    {
+        absolute_time_t drawStart = get_absolute_time();
+        tft.drawBitmap(canvas->getBuffer());
+        canvas = (canvas == &canvas1) ? &canvas2 : &canvas1; // Swap canvas
+        drawTime_us = absolute_time_diff_us(drawStart, get_absolute_time());
+    }
 }
 
 #if false

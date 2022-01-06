@@ -93,7 +93,7 @@ class Adafruit_HX8340B : public Adafruit_GFX
         void rawWrite(uint16_t color) { writeData16(color); };
         void drawBitmap(const uint16_t *buffer);
 
-        //bool isReady() { return !pio_sm_is_tx_fifo_full(_pio, _stateMachine); };
+        bool isReady() { return !dma_channel_is_busy(_dmaChannel); };
         void waitUntilReady() { dma_channel_wait_for_finish_blocking(_dmaChannel); }
 
     private:
