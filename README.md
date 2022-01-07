@@ -22,6 +22,20 @@ Contains as scaled-down port of the GFX library ported to rp2040.
 - [ ] Add a 8ch SPI ADC
 - [ ] Add a SPI EEPROM for saving settings
 
+**Todo**
+- [ ] Split screen update into separate thread
+- [ ] Introduce some kind of state machine
+- [ ] SPI EEPROM driver class
+- [ ] SPI ADC driver class
+- [ ] Input class (puttons, pots)
+- [ ] Radio class (send/recieve)
+- [ ] Battery measurement/visualization
+- [ ] Configuration menu
+  - [ ] Radio scan
+  - [ ] Assign channel
+  - [ ] Input/channel assignment
+  - [ ] Adjust Joystick thresholds, center/offset and scale
+  - [ ] Adjust ADC kalman filter Q/R values
 
 # Commands to remember
 * `export PICO_SDK_PATH=/home/pi/pico/pico-sdk`
