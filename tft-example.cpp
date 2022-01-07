@@ -10,7 +10,10 @@
 #include "display.hpp"
 #include "RF24.hpp"
 #include "packets.h"
+#include "kalman.h"
 
+#include "FreeSans9pt7b.h"
+#include "FreeSans12pt7b.h"
 
 #define BTN_PIN     22
 
@@ -70,6 +73,8 @@ void core1_radio_scanner()
 
 
 absolute_time_t loopStart;
+kalman_filter_t xAxisFilter;
+kalman_filter_t yAxisFilter;
 
 #define PWM_WRAP_POINT  500
 void setup()
@@ -95,6 +100,9 @@ void setup()
     adc_gpio_init(27);
     adc_gpio_init(29);
     adc_set_temp_sensor_enabled(true);
+
+    kalman_init (&xAxisFilter, 2048);
+    kalman_init (&yAxisFilter, 2048);
 
     // Setup joystick push button interrupt
     gpio_init (BTN_PIN);
@@ -133,7 +141,7 @@ void setup()
 }
 
 #define CROSS_HAIR_SIZE 4
-uint16_t last_X, last_Y;
+//uint16_t last_X, last_Y;
 
 inline int map(int x, int in_min, int in_max, int out_min, int out_max) {  
     return (x - in_min) * (out_max - out_min + 1) / (in_max - in_min + 1) + out_min;
@@ -144,12 +152,17 @@ void loop()
 {
     absolute_time_t computeStart = get_absolute_time();
 
+    canvas->fillScreen(BLACK);
+
     const uint adc_max = (1 << 12) - 1;
     adc_select_input(0);    // gpio 26, pin 31
     uint adc_x_raw = adc_read();
     adc_select_input(1);    // gpio 27, pin 32
     uint adc_y_raw = adc_read();
     
+    adc_x_raw = kalman_filter(&xAxisFilter, adc_x_raw);
+    adc_y_raw = kalman_filter(&yAxisFilter, adc_y_raw);
+
     adc_select_input(3);    // internal vbus
     float vbusVoltage = adc_read() * 3 * 3.3f / adc_max;
     
@@ -204,23 +217,23 @@ void loop()
     uint16_t y = adc_y_raw * canvas->height() / adc_max;
 
     // Fade screen according to joystick
-    uint setPoint = adc_y_raw * PWM_WRAP_POINT / adc_max;
-    uint slice_num = pwm_gpio_to_slice_num(TFT_BL);
-    pwm_set_chan_level(slice_num, TFT_BL_CHAN, setPoint);
+    bool buttonDown = !gpio_get(BTN_PIN);
 
+    if (buttonDown) {
+        uint setPoint = adc_y_raw * PWM_WRAP_POINT / adc_max;
+        uint slice_num = pwm_gpio_to_slice_num(TFT_BL);
+        pwm_set_chan_level(slice_num, TFT_BL_CHAN, setPoint);
+    }
 
-    canvas->drawFastVLine(last_X, last_Y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, BLACK);
-    canvas->drawFastHLine(last_X - CROSS_HAIR_SIZE, last_Y, CROSS_HAIR_SIZE * 2 + 1, BLACK);
-    canvas->drawFastVLine(x, y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, 0b0001000011111100);
-    canvas->drawFastHLine(x - CROSS_HAIR_SIZE, y, CROSS_HAIR_SIZE * 2 + 1, 0b0001000011111100);
-    last_X = x;
-    last_Y = y;
+    canvas->drawFastVLine(x, y - CROSS_HAIR_SIZE, CROSS_HAIR_SIZE * 2 + 1, BLUE);
+    canvas->drawFastHLine(x - CROSS_HAIR_SIZE, y, CROSS_HAIR_SIZE * 2 + 1, BLUE);
 
     char buf[40];
     snprintf (buf, sizeof(buf), "X: %4d\nY: %4d\nBtn: %4d", adc_x_raw, adc_y_raw, button_pressed);
+    canvas->setFont(&FreeSans9pt7b);
     canvas->setTextSize(1);
-    canvas->setCursor(0,0);
-    canvas->setTextColor(WHITE);
+    canvas->setCursor(0,15);
+    canvas->setTextColor(BLUE);
     drawtext(buf);
 
     /*absolute_time_t timeout = make_timeout_time_ms(20);
@@ -243,7 +256,7 @@ void loop()
     loopStart = get_absolute_time();
 
     uint computeTime_us = absolute_time_diff_us(computeStart, get_absolute_time());
-
+    canvas->setFont(NULL);
     canvas->setTextSize(1);
     canvas->setTextColor(GREEN);
 

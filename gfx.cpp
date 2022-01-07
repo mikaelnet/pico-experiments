@@ -22,7 +22,7 @@ Adafruit_GFX::Adafruit_GFX(int16_t w, int16_t h) : WIDTH(w), HEIGHT(h)
     _gfxFont = NULL;
 }
 
-void Adafruit_GFX::writeLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color) 
+void Adafruit_GFX::writeLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color)
 {
     int16_t steep = abs(y1 - y0) > abs(x1 - x0);
     if (steep) {
@@ -44,7 +44,7 @@ void Adafruit_GFX::writeLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uin
 
     if (y0 < y1) {
         ystep = 1;
-    } 
+    }
     else {
         ystep = -1;
     }
@@ -52,7 +52,7 @@ void Adafruit_GFX::writeLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uin
     for (; x0 <= x1; x0++) {
         if (steep) {
             drawPixel(y0, x0, color);
-        } else 
+        } else
         {
             drawPixel(x0, y0, color);
         }
@@ -65,11 +65,11 @@ void Adafruit_GFX::writeLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uin
     }
 }
 
-void Adafruit_GFX::setRotation(uint8_t x) 
+void Adafruit_GFX::setRotation(uint8_t x)
 {
     _rotation = (x & 3);
 
-    switch (_rotation) 
+    switch (_rotation)
     {
         case 0:
         case 2:
@@ -84,37 +84,37 @@ void Adafruit_GFX::setRotation(uint8_t x)
     }
 }
 
-void Adafruit_GFX::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) 
+void Adafruit_GFX::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
 {
     writeLine (x, y, x, y + h - 1, color);
 }
 
-void Adafruit_GFX::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) 
+void Adafruit_GFX::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
 {
     writeLine (x, y, x + w - 1, y, color);
 }
 
-void Adafruit_GFX::drawLine (int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color) 
+void Adafruit_GFX::drawLine (int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color)
 {
     // Update in subclasses if desired!
-    if (x0 == x1) 
+    if (x0 == x1)
     {
         if (y0 > y1)
             _swap_int16_t(y0, y1);
 
         drawFastVLine(x0, y0, y1 - y0 + 1, color);
-    } 
+    }
     else if (y0 == y1) {
         if (x0 > x1)
             _swap_int16_t(x0, x1);
         drawFastHLine(x0, y0, x1 - x0 + 1, color);
-    } 
+    }
     else {
         writeLine(x0, y0, x1, y1, color);
     }
 }
 
-void Adafruit_GFX::drawRect (int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) 
+void Adafruit_GFX::drawRect (int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
 {
     drawFastHLine(x, y, w, color);
     drawFastHLine(x, y + h - 1, w, color);
@@ -122,7 +122,7 @@ void Adafruit_GFX::drawRect (int16_t x, int16_t y, int16_t w, int16_t h, uint16_
     drawFastVLine(x + w - 1, y, h, color);
 }
 
-void Adafruit_GFX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) 
+void Adafruit_GFX::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
 {
     for (int16_t i = x; i < x + w; i++) {
         drawFastVLine(i, y, h, color);
@@ -133,7 +133,7 @@ void Adafruit_GFX::fillScreen(uint16_t color) {
   fillRect(0, 0, _width, _height, color);
 }
 
-void Adafruit_GFX::drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color) 
+void Adafruit_GFX::drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color)
 {
     int16_t f = 1 - r;
     int16_t ddF_x = 1;
@@ -167,7 +167,7 @@ void Adafruit_GFX::drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color)
     }
 }
 
-void Adafruit_GFX::drawCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername, uint16_t color) 
+void Adafruit_GFX::drawCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername, uint16_t color)
 {
     int16_t f = 1 - r;
     int16_t ddF_x = 1;
@@ -203,13 +203,13 @@ void Adafruit_GFX::drawCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t c
     }
 }
 
-void Adafruit_GFX::fillCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color) 
+void Adafruit_GFX::fillCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color)
 {
     drawFastVLine(x0, y0 - r, 2 * r + 1, color);
     fillCircleHelper(x0, y0, r, 3, 0, color);
 }
 
-void Adafruit_GFX::fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t corners, int16_t delta, uint16_t color) 
+void Adafruit_GFX::fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t corners, int16_t delta, uint16_t color)
 {
     int16_t f = 1 - r;
     int16_t ddF_x = 1;
@@ -221,7 +221,7 @@ void Adafruit_GFX::fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t c
 
     delta++; // Avoid some +1's in the loop
 
-    while (x < y) 
+    while (x < y)
     {
         if (f >= 0) {
             y--;
@@ -232,7 +232,7 @@ void Adafruit_GFX::fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t c
         x++;
         ddF_x += 2;
         f += ddF_x;
-        
+
         // These checks avoid double-drawing certain lines, important
         // for the SSD1306 library which has an INVERT drawing mode.
         if (x < (y + 1)) {
@@ -255,7 +255,7 @@ void Adafruit_GFX::fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t c
     }
 }
 
-void Adafruit_GFX::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color) 
+void Adafruit_GFX::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color)
 {
     int16_t max_radius = ((w < h) ? w : h) / 2; // 1/2 minor axis
     if (r > max_radius)
@@ -274,7 +274,7 @@ void Adafruit_GFX::drawRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int
     drawCircleHelper(x + r, y + h - r - 1, r, 8, color);
 }
 
-void Adafruit_GFX::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color) 
+void Adafruit_GFX::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r, uint16_t color)
 {
     int16_t max_radius = ((w < h) ? w : h) / 2; // 1/2 minor axis
     if (r > max_radius)
@@ -288,14 +288,14 @@ void Adafruit_GFX::fillRoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int
     fillCircleHelper(x + r, y + r, r, 2, h - 2 * r - 1, color);
 }
 
-void Adafruit_GFX::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) 
+void Adafruit_GFX::drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color)
 {
   drawLine(x0, y0, x1, y1, color);
   drawLine(x1, y1, x2, y2, color);
   drawLine(x2, y2, x0, y0, color);
 }
 
-void Adafruit_GFX::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color) 
+void Adafruit_GFX::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color)
 {
     int16_t a, b, y, last;
 
@@ -391,7 +391,7 @@ void Adafruit_GFX::fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, 
     @param    color 16-bit 5-6-5 Color to draw with
 */
 /**************************************************************************/
-void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color) 
+void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color)
 {
     int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
     uint8_t byte = 0;
@@ -402,7 +402,7 @@ void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16
                 byte <<= 1;
             else
                 byte = bitmap[j * byteWidth + i / 8];
-            
+
             if (byte & 0x80)
                 drawPixel(x + i, y, color);
         }
@@ -423,7 +423,7 @@ void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16
     @param    bg 16-bit 5-6-5 Color to draw background with
 */
 /**************************************************************************/
-void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color, uint16_t bgColor) 
+void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16_t w, int16_t h, uint16_t color, uint16_t bgColor)
 {
     int16_t byteWidth = (w + 7) / 8; // Bitmap scanline pad = whole byte
     uint8_t byte = 0;
@@ -434,7 +434,7 @@ void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16
                 byte <<= 1;
             else
                 byte = bitmap[j * byteWidth + i / 8];
-            
+
             if (byte & 0x80)
                 drawPixel(x + i, y, (byte & 0x80) ? color : bgColor);
         }
@@ -444,15 +444,15 @@ void Adafruit_GFX::drawBitmap(int16_t x, int16_t y, const uint8_t *bitmap, int16
 
 /* ------------- text handling ----------- */
 
-void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint8_t size) 
+void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint8_t size)
 {
   drawChar(x, y, c, color, bg, size, size);
 }
 
-void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint8_t size_x, uint8_t size_y) 
+void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c, uint16_t color, uint16_t bg, uint8_t size_x, uint8_t size_y)
 {
     if (!_gfxFont)  // 'Classic' built-in font
-    { 
+    {
         if ((x >= _width) ||              // Clip right
             (y >= _height) ||             // Clip bottom
             ((x + 6 * size_x - 1) < 0) || // Clip left
@@ -470,7 +470,7 @@ void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c, uint16_t colo
                         drawPixel(x + i, y + j, color);
                     else
                         fillRect(x + i * size_x, y + j * size_y, size_x, size_y, color);
-                } 
+                }
                 else if (bg != color) {
                     if (size_x == 1 && size_y == 1)
                         drawPixel(x + i, y + j, bg);
@@ -544,13 +544,13 @@ void Adafruit_GFX::drawChar(int16_t x, int16_t y, unsigned char c, uint16_t colo
     } // End classic vs custom font
 }
 
-size_t Adafruit_GFX::write(uint8_t c) 
+size_t Adafruit_GFX::write(uint8_t c)
 {
     if (!_gfxFont) { // 'Classic' built-in font
         if (c == '\n') {              // Newline?
             _cursor_x = 0;                // Reset x to zero,
             _cursor_y += _textsize_y * 8; // advance y one line
-        } 
+        }
         else if (c != '\r') {       // Ignore carriage returns
             if (_text_wrap && ((_cursor_x + _textsize_x * 6) > _width)) { // Off right?
                 _cursor_x = 0;                                       // Reset x to zero,
@@ -566,7 +566,7 @@ size_t Adafruit_GFX::write(uint8_t c)
         if (c == '\n') {
             _cursor_x = 0;
             _cursor_y += _textsize_y * _gfxFont->yAdvance;
-        } 
+        }
         else if (c != '\r') {
             uint8_t first = _gfxFont->first;
             if ((c >= first) && (c <= _gfxFont->last)) {
@@ -580,10 +580,10 @@ size_t Adafruit_GFX::write(uint8_t c)
                         _cursor_x = 0;
                         _cursor_y += _textsize_y * _gfxFont->yAdvance;
                     }
-                
+
                     drawChar(_cursor_x, _cursor_y, c, _textcolor, 0x0000, _textsize_x, _textsize_y);
                 }
-                
+
                 _cursor_x += glyph->xAdvance * _textsize_x;
             }
         }
@@ -591,8 +591,23 @@ size_t Adafruit_GFX::write(uint8_t c)
     return 1;
 }
 
+void Adafruit_GFX::setFont(const GFXfont *f) {
+    if (f) {               // Font struct pointer passed in?
+        if (!_gfxFont) {   // And no current font struct?
+            // Switching from classic to new font behavior.
+            // Move cursor pos down 6 pixels so it's on baseline.
+            _cursor_y += 6;
+        }
+    }
+    else if (_gfxFont) {     // NULL passed. Current font struct defined?
+        // Switching from new to classic font behavior.
+        // Move cursor pos up 6 pixels so it's at top-left of char.
+        _cursor_y -= 6;
+    }
+    _gfxFont = (GFXfont *)f;
+}
 
-void Adafruit_GFX::setTextSize(uint8_t s_x, uint8_t s_y) 
+void Adafruit_GFX::setTextSize(uint8_t s_x, uint8_t s_y)
 {
     _textsize_x = (s_x > 0) ? s_x : 1;
     _textsize_y = (s_y > 0) ? s_y : 1;
