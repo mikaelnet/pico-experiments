@@ -9,17 +9,19 @@ Contains as scaled-down port of the GFX library ported to rp2040.
 - [x] Code in VS Code on PC. Compile on Raspberry PI 4. SWD flash programming.
 - [x] Control the TFT using bit banging
 - [x] Control the TFT using hardware spi port
-- [ ] Investigate if a custom PIO 9-bit spi implementation would be better.
+- [x] Investigate if a custom PIO 9-bit spi implementation would be better.
 - [x] Attach a joystick and visualize its position
-- [x] Attach joystick button as command button
+- [x] Attach joystick button as command button. Software debounce
+- [x] Kalman filter on ADC input
 - [x] Adjust TFT backlight with PWM
 - [x] Send debug data on usb tty
 - [ ] Transmit data via a nRF24l01.
 - [x] Radio scan for free air channels
 - [x] Experiment with two cores - try mutexes
-- [ ] Run on two cores, where one draws the TFT and the other does the com.
+- [x] Run on two cores, where one draws the TFT and the other does the com.
 - [ ] Add a 8ch SPI ADC
-- [ ] 
+- [ ] Add a SPI EEPROM for saving settings
+
 
 # Commands to remember
 * `export PICO_SDK_PATH=/home/pi/pico/pico-sdk`

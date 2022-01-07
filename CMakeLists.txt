@@ -18,7 +18,7 @@ target_sources(transmitter
         gfxcanvas.cpp
         RF24.cpp
         display.cpp
-        kalman.c
+        kalman.cpp
 )
 
 

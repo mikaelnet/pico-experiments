@@ -10,7 +10,7 @@
 #include "display.hpp"
 #include "RF24.hpp"
 #include "packets.h"
-#include "kalman.h"
+#include "kalman.hpp"
 
 #include "FreeSans9pt7b.h"
 #include "FreeSans12pt7b.h"
@@ -73,8 +73,8 @@ void core1_radio_scanner()
 
 
 absolute_time_t loopStart;
-kalman_filter_t xAxisFilter;
-kalman_filter_t yAxisFilter;
+KalmanFilter xAxisFilter;
+KalmanFilter yAxisFilter;
 
 #define PWM_WRAP_POINT  500
 void setup()
@@ -101,8 +101,8 @@ void setup()
     adc_gpio_init(29);
     adc_set_temp_sensor_enabled(true);
 
-    kalman_init (&xAxisFilter, 2048);
-    kalman_init (&yAxisFilter, 2048);
+    xAxisFilter.init(2048);
+    yAxisFilter.init(2048);
 
     // Setup joystick push button interrupt
     gpio_init (BTN_PIN);
@@ -160,8 +160,8 @@ void loop()
     adc_select_input(1);    // gpio 27, pin 32
     uint adc_y_raw = adc_read();
     
-    adc_x_raw = kalman_filter(&xAxisFilter, adc_x_raw);
-    adc_y_raw = kalman_filter(&yAxisFilter, adc_y_raw);
+    adc_x_raw = xAxisFilter.filter(adc_x_raw);
+    adc_y_raw = yAxisFilter.filter(adc_y_raw);
 
     adc_select_input(3);    // internal vbus
     float vbusVoltage = adc_read() * 3 * 3.3f / adc_max;
@@ -268,6 +268,12 @@ void loop()
     drawtext(buf);
     snprintf(buf, sizeof(buf), "draw %dus", drawTime_us);
     canvas->setCursor(100, 24);
+    drawtext(buf);
+
+    canvas->setTextColor(RED);
+    snprintf(buf, sizeof(buf), "bool %d\nint %d\nlong %d\nfloat %d\ndouble %d",
+        sizeof(bool), sizeof(int), sizeof(long), sizeof(float), sizeof(double));
+    canvas->setCursor(0, 50);
     drawtext(buf);
 
     if (tft.isReady())
