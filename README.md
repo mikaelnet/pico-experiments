@@ -15,14 +15,15 @@ Contains as scaled-down port of the GFX library ported to rp2040.
 - [x] Kalman filter on ADC input
 - [x] Adjust TFT backlight with PWM
 - [x] Send debug data on usb tty
-- [ ] Transmit data via a nRF24l01.
+- [ ] Transmit data via a nRF24l01.. Max 10MHz
 - [x] Radio scan for free air channels
 - [x] Experiment with two cores - try mutexes
 - [x] Run on two cores, where one draws the TFT and the other does the com.
-- [ ] Add a 8ch SPI ADC
-- [ ] Add a SPI EEPROM for saving settings
+- [ ] Add a 8ch SPI ADC. Max 2MHz @5V, Max 1MHz @2.7V
+- [ ] Add a SPI EEPROM for saving settings. Max 2MHz @3v3
 
 **Todo**
+- [ ] Add doxygen or similar for documentation
 - [ ] Split screen update into separate thread
 - [ ] Introduce some kind of state machine
 - [ ] SPI EEPROM driver class

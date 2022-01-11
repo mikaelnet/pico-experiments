@@ -12,13 +12,15 @@ add_executable(transmitter)
 pico_generate_pio_header(transmitter ${CMAKE_CURRENT_LIST_DIR}/spi9.pio)
 target_sources(transmitter
         PRIVATE
-        tft-example.cpp
+        transmitter.cpp
+        statemachine.cpp
         gfx.cpp
         hx8340b.cpp
         gfxcanvas.cpp
         RF24.cpp
         display.cpp
         kalman.cpp
+        MCP3208.cpp
 )
 
 
